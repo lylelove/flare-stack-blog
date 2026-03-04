@@ -29,8 +29,8 @@
 
 ### `client`（TanStack Query）
 
-1. 请求级错误统一走全局 `onError`：`src/lib/errors/error-handler.ts`。
-2. 业务错误在 `result.error.reason` 分支处理（通常在 mutation 中提示 toast）。
+1. `query/mutation` 默认不写自定义 `onError`，请求级错误统一走全局 `onError`：`src/lib/errors/error-handler.ts`。
+2. 业务错误统一在 `onSuccess` 中处理 `result.error.reason` 分支。
 
 ## 何时用 Result
 
@@ -113,16 +113,20 @@ export function tagsQuery() {
 // src/features/tags/hooks/use-tags.ts
 export function useDeleteTag() {
   return useMutation({
-    mutationFn: async (id: string) => {
-      const result = await deleteTagFn({ data: { id } });
+    mutationFn: (id: string) => deleteTagFn({ data: { id } }),
+    onSuccess: (result) => {
       if (result.error) {
         switch (result.error.reason) {
           case "TAG_NOT_FOUND":
-            throw new Error("标签不存在或已删除");
+            toast.error("标签不存在或已删除");
+            return;
           default:
             result.error.reason satisfies never;
+            return;
         }
       }
+
+      toast.success("标签已删除");
     },
   });
 }

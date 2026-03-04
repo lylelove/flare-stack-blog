@@ -119,16 +119,24 @@ export async function createTag(context: DbContext, name: string) {
   return ok(tag);
 }
 
-// 调用方（处理 result.error.reason）
-const result = await TagService.createTag(context, "React");
-if (result.error) {
-  switch (result.error.reason) {
-    case "TAG_NAME_ALREADY_EXISTS":
-      throw new Error("标签已存在");
-    default:
-      result.error.reason satisfies never; // 穷尽检查
-  }
-}
+// 调用方（query/mutation 约定：在 onSuccess 处理业务错误）
+const createTagMutation = useMutation({
+  mutationFn: (name: string) => createTagFn({ data: { name } }),
+  onSuccess: (result) => {
+    if (result.error) {
+      switch (result.error.reason) {
+        case "TAG_NAME_ALREADY_EXISTS":
+          toast.error("标签已存在");
+          return;
+        default:
+          result.error.reason satisfies never; // 穷尽检查
+          return;
+      }
+    }
+
+    toast.success("标签已创建");
+  },
+});
 
 // 服务层（无业务错误 -> 直接返回 T）
 export async function getTags(context: DbContext) {
@@ -190,6 +198,8 @@ await CacheService.deleteKey(context, POSTS_CACHE_KEYS.detail(version, slug));
 ```
 
 ### 5. TanStack Query 模式
+
+错误处理规范统一维护在 [错误处理与 Result 模式快速上手](./docs/error-handling-quickstart.md)，这里不再重复。
 
 Query Key 工厂：
 

@@ -11,6 +11,24 @@ This skill covers TanStack Query patterns, route loaders, component organization
 
 The project follows **TanStack Start / TanStack Query** standard practices for seamless SSR and client-side caching.
 
+### Query/Mutation Error Rules
+
+1. Do not add custom `onError` by default in `useQuery` / `useMutation`; request-level errors are handled by global QueryClient `onError`.
+2. Handle business errors in `onSuccess` using `result.error` branches.
+
+```typescript
+const mutation = useMutation({
+  mutationFn: () => approveFriendLinkFn({ data: { id } }),
+  onSuccess: (result) => {
+    if (result.error) {
+      toast.error("操作失败: 友链不存在");
+      return;
+    }
+    toast.success("友链已批准");
+  },
+});
+```
+
 ### 1. Query Definition
 
 Organize query definitions in `features/<name>/queries/index.ts`. Use a **Query Key Factory** pattern to centralize and type-safe your cache keys.
